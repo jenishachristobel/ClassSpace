@@ -16,16 +16,17 @@ const { authenticateToken } = require('./middleware/authMiddleware');
 
 const app = express();
 
-// Initialize DB schema
-try {
-  initializeDatabase();
-} catch (err) {
-  console.error('[ClassSpace] Database initialization failure:', err);
-}
+// Allowed frontend origins
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5001',
+  'https://class-space-dusky.vercel.app'
+];
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5001'],
+  origin: allowedOrigins,
   credentials: true
 }));
 
@@ -35,7 +36,7 @@ app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 // Static uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
@@ -45,7 +46,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Mount Routes
+// Mount API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/student', studentRoutes);
@@ -53,52 +54,75 @@ app.use('/api/teacher', teacherRoutes);
 app.use('/api/plagiarism', plagiarismRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// Direct authenticated submission file download & browser preview
-app.get('/api/submissions/:submissionId/file', authenticateToken, fileController.downloadSubmissionFile);
+// Submission file download
+app.get(
+  '/api/submissions/:submissionId/file',
+  authenticateToken,
+  fileController.downloadSubmissionFile
+);
 
-// Global Error Handler
+// Global error handler
 app.use((err, req, res, next) => {
   console.error('[Server Error]', err.stack || err);
+
   const status = err.status || 500;
+
   res.status(status).json({
     success: false,
     message: err.message || 'Internal Server Error'
   });
 });
 
-// 404 Route Handler
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: `API endpoint '${req.originalUrl}' not found.`
+    message: "API endpoint '" + req.originalUrl + "' not found."
   });
 });
 
-// Start Main API Server
+// Server configuration
 let server = null;
+let mockPlagiarismServerStarted = false;
 
 function startServer(port = env.PORT) {
-  if (server) return server;
+  if (server) {
+    return server;
+  }
+
   server = app.listen(port, () => {
-    console.log(`=======================================================`);
-    console.log(`[ClassSpace API] Server running on http://localhost:${port}`);
-    console.log(`[ClassSpace API] Database client: ${env.DB_CLIENT}`);
-    console.log(`=======================================================`);
+    console.log('=======================================================');
+    console.log('[ClassSpace API] Server listening on port ' + port);
+    console.log('[ClassSpace API] Database client: ' + env.DB_CLIENT);
+    console.log('=======================================================');
   });
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.log(`[ClassSpace API] Port ${port} is already active; reusing existing instance.`);
+      console.error('[ClassSpace API] Port ' + port + ' is already in use.');
+    } else {
+      console.error('[ClassSpace API] Server error:', err);
     }
   });
 
-  // Also launch the mock external plagiarism service on port 5001 if enabled (skip in test mode)
-  if (process.env.NODE_ENV !== 'test') {
+  // Optional mock plagiarism service
+  if (
+    process.env.NODE_ENV !== 'test' &&
+    process.env.ENABLE_MOCK_PLAGIARISM === 'true' &&
+    !mockPlagiarismServerStarted
+  ) {
     try {
-      const mockPlag = require('./mock-plagiarism-service/server');
-      if (mockPlag.startServer) mockPlag.startServer();
-    } catch (e) {
-      console.log('[Notice] Mock plagiarism service initialization note:', e.message);
+      const mockPlagiarism = require('./mock-plagiarism-service/server');
+
+      if (mockPlagiarism.startServer) {
+        mockPlagiarism.startServer();
+        mockPlagiarismServerStarted = true;
+      }
+    } catch (err) {
+      console.error(
+        '[ClassSpace] Mock plagiarism service could not start:',
+        err.message
+      );
     }
   }
 
@@ -106,14 +130,25 @@ function startServer(port = env.PORT) {
   return server;
 }
 
+// Initialize database before starting the API
 if (process.env.NODE_ENV !== 'test') {
-  startServer();
+  initializeDatabase()
+    .then(() => {
+      console.log('[ClassSpace] Database initialization completed.');
+      startServer();
+    })
+    .catch((err) => {
+      console.error('[ClassSpace] Database initialization failure:', err);
+      process.exit(1);
+    });
 }
 
+// Close server
 function closeServer() {
   if (server) {
     server.close();
     server = null;
+    app.server = null;
   }
 }
 
