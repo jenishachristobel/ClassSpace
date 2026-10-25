@@ -1,0 +1,13 @@
+# Java Multithreading & Thread Pool Synchronization Report
+Author: Liam Chen (Student ID: STU-2024-003)
+Course: CS302 - Java Programming
+Instructor: Prof. Robert Vance
+
+## Introduction
+This lab report covers the design of a concurrent producer-consumer pipeline utilizing `java.util.concurrent.BlockingQueue` and custom `ReentrantLock` primitives.
+
+## Architecture
+- 4 Producer threads generating cryptographic hash tasks.
+- 8 Consumer threads processing with adaptive backoff.
+- Atomic counters tracking throughput without mutex contention.
+

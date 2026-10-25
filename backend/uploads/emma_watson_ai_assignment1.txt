@@ -1,0 +1,16 @@
+# Artificial Intelligence Assignment 1: A* Search Algorithm Comparison
+Author: Emma Watson (Student ID: STU-2024-002)
+Course: CS401 - Artificial Intelligence
+Instructor: Dr. Maya Patel
+
+## Abstract
+In this study, the A* Search algorithm was applied across multiple graph layouts and benchmark 8-puzzle configurations. We analyzed the performance of various heuristics including the Manhattan distance and straight-line distance.
+
+## Methodology
+The algorithm was constructed in Python utilizing heapq for optimal time complexity. Heuristics tested were verified for admissibility to guarantee optimal solutions.
+
+## Experimental Metrics
+- Average nodes explored: 46
+- Memory footprint: 1.8 MB
+- Runtime average: 15.1ms
+

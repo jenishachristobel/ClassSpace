@@ -1,0 +1,18 @@
+# Artificial Intelligence Assignment 1: A* Search Algorithm Report
+Author: Alex Rivera (Student ID: STU-2024-001)
+Course: CS401 - Artificial Intelligence
+Instructor: Dr. Maya Patel
+
+## Abstract
+This report presents an empirical analysis of heuristic functions applied to the 8-puzzle and generalized graph navigation problems using the A* Search algorithm. We compare Manhattan distance, Euclidean distance, and Nilssons sequence score.
+
+## Implementation Details
+1. Priority Queue implementation using a Min-Heap.
+2. Admissibility and Consistency verification for h(n) <= c(n, a, n') + h(n').
+3. Node expansion counters and effective branching factor calculation.
+
+## Results
+- Manhattan Distance expanded 42 nodes for depth 14.
+- Euclidean Distance expanded 89 nodes.
+- Total execution time: 14.2ms.
+
